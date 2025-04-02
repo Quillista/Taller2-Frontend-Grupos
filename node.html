@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clase: Node.js con Express y SQLite</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css">
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <h1>Node.js con Express y SQLite</h1>
+                <h3>CRUD básico con Sequelize</h3>
+            </section>
+            
+            <section>
+                <h2>1. Configurar el Proyecto</h2>
+                <pre><code data-trim data-noescape>
+mkdir express-sqlite-crud && cd express-sqlite-crud
+npm init -y
+npm install express sqlite3 sequelize
+                </code></pre>
+            </section>
+
+            <section>
+                <h2>1.1  Estructura del Proyecto</h2>
+            <pre><code>
+express-sqlite-crud
+│── node_modules/
+│── db.js
+│── models/
+│   ├── Task.js
+│── routes/
+│   ├── tasks.js
+│── server.js
+│── package.json
+            </code></pre>
+        </section>
+            
+            <section>
+                <h2>2. Configuración de SQLite</h2>
+                <p><strong>db.js</strong></p>
+                <pre><code data-trim data-noescape>
+const { Sequelize } = require("sequelize");
+const sequelize = new Sequelize({ dialect: "sqlite", storage: "database.sqlite" });
+module.exports = sequelize;
+                </code></pre>
+            </section>
+            
+            <section>
+                <h2>3. Definir Modelo</h2>
+                <p><strong>models/Task.js</strong></p>
+                <pre><code data-trim data-noescape>
+const { DataTypes } = require("sequelize");
+const sequelize = require("../db");
+
+const Task = sequelize.define("Task", {
+  title: { type: DataTypes.STRING, allowNull: false },
+  completed: { type: DataTypes.BOOLEAN, defaultValue: false }
+});
+
+module.exports = Task;
+                </code></pre>
+            </section>
+            
+            <section>
+                <h2>4. Crear Rutas CRUD</h2>
+                <p><strong>routes/tasks.js</strong></p>
+                <pre><code data-trim data-noescape>
+const express = require("express");
+const Task = require("../models/Task");
+const router = express.Router();
+
+router.post("/", async (req, res) => { res.json(await Task.create(req.body)); });
+router.get("/", async (req, res) => { res.json(await Task.findAll()); });
+router.get("/:id", async (req, res) => { res.json(await Task.findByPk(req.params.id)); });
+router.put("/:id", async (req, res) => { let task = await Task.findByPk(req.params.id);
+    task ? (await task.update(req.body), res.json(task)) : res.status(404).send("Not Found"); });
+router.delete("/:id", async (req, res) => { let task = await Task.findByPk(req.params.id);
+    task ? (await task.destroy(), res.send("Deleted")) : res.status(404).send("Not Found"); });
+
+module.exports = router;
+                </code></pre>
+            </section>
+            
+            <section>
+                <h2>5. Configurar Express</h2>
+                <p><strong>server.js</strong></p>
+                <pre><code data-trim data-noescape>
+const express = require("express");
+const sequelize = require("./db");
+const taskRoutes = require("./routes/tasks");
+const app = express();
+
+app.use(express.json());
+app.use("/tasks", taskRoutes);
+
+sequelize.sync().then(() => {
+    console.log("Base de datos sincronizada");
+    app.listen(3000, () => console.log("Servidor en http://localhost:3000"));
+});
+                </code></pre>
+            </section>
+            
+            <section>
+                <h2>6. Probar con Postman</h2>
+                <pre><code data-trim data-noescape>
+curl -X POST -H "Content-Type: application/json" -d '{"title":"Aprender Node.js"}' http://localhost:3000/tasks
+curl -X GET http://localhost:3000/tasks
+                </code></pre>
+            </section>
+            
+            <section>
+                <h2>¡Gracias!</h2>
+                <h3>Preguntas y respuestas</h3>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>
+        Reveal.initialize({
+    width: "100%",
+    height: "100%",
+   
+    minScale: 1,
+    maxScale: 1
+});
+       
+        hljs.highlightAll();
+    </script>
+</body>
+</html>
